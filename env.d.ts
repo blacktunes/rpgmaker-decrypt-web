@@ -7,13 +7,22 @@ interface Window {
 /** 构建时间 */
 declare const BUILD_TIME: number
 
-type DirectoryHandle = FileSystemDirectoryHandle & {
+interface BaseItem {
+  name: string
   key: string
-  children: (DirectoryHandle | FileSystemFileHandle)[]
-  getChildrenDir: (name: string) => DirectoryHandle | undefined
-  getChildrenFile: (name: string) => FileSystemFileHandle | undefined
 }
 
-type FileHandle = FileSystemFileHandle & {
+interface BaseHandle {
   key: string
+  disabled?: boolean
 }
+
+type DirectoryHandle = BaseHandle &
+  FileSystemDirectoryHandle & {
+    root?: boolean
+    children: (DirectoryHandle | FileHandle)[] | null
+    getChildrenDir: (name: string) => DirectoryHandle | undefined
+    getChildrenFile: (name: string) => FileHandle | undefined
+  }
+
+type FileHandle = BaseHandle & FileSystemFileHandle

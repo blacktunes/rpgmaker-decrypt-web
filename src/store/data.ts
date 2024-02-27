@@ -1,8 +1,14 @@
-import { ref, computed } from 'vue'
+import { getFilterList } from '@/scripts/uilts'
+import { ref, computed, reactive } from 'vue'
 
 const encryptionKey = ref<string | null>(null)
-const audio = ref<DirectoryHandle | undefined>()
 const image = ref<DirectoryHandle | undefined>()
+const audio = ref<DirectoryHandle | undefined>()
+
+const keys = reactive({
+  image: '',
+  audio: ''
+})
 
 const treeData = computed(() => {
   const list = []
@@ -15,4 +21,29 @@ const treeData = computed(() => {
   return list
 })
 
-export { encryptionKey, audio, image, treeData }
+const sidebar: {
+  select?: BaseItem
+  readonly currentImageList: BaseItem[]
+  readonly currentAudioList: BaseItem[]
+  readonly currentList: BaseItem[]
+} = reactive({
+  search: '',
+  select: {
+    name: '',
+    key: ''
+  },
+  currentImageList: computed(() => getFilterList(image.value)),
+  currentAudioList: computed(() => getFilterList(audio.value)),
+  currentList: computed(() => {
+    const list: BaseItem[] = []
+    if (sidebar.currentImageList.length > 0) {
+      list.push(...sidebar.currentImageList)
+    }
+    if (sidebar.currentAudioList.length > 0) {
+      list.push(...sidebar.currentAudioList)
+    }
+    return list
+  })
+})
+
+export { encryptionKey, image, audio, keys, treeData, sidebar }

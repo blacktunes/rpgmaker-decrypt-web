@@ -13,15 +13,16 @@
       depth="3"
       style="margin: 8px 0 0 0"
     >
-      这个网站能查看RPGMakerMV/MZ加密的音频和图片
+      这个网站能查看RPGMakerMV/MZ常规加密的音频和图片
     </n-p>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { notification } from '@/assets/scripts/ui'
-import { encryptionKey, audio, image } from '@/store/data'
 import { ref } from 'vue'
+import { notification } from '@/scripts/ui'
+import { generateUUID, sort } from '@/scripts/uilts'
+import { encryptionKey, audio, image, keys } from '@/store/data'
 
 const hover = ref(false)
 
@@ -99,8 +100,20 @@ const getFileSystemHandle = async (handle: FileSystemDirectoryHandle) => {
     })
   }
 
-  audio.value = root.getChildrenDir('audio')
-  image.value = root.getChildrenDir('img')
+  const imageList = root.getChildrenDir('img')
+  if (imageList) {
+    imageList.root = true
+    sort(imageList)
+    keys.image = imageList.key
+    image.value = imageList
+  }
+  const audioList= root.getChildrenDir('audio')
+  if (audioList) {
+    audioList.root = true
+    sort(audioList)
+    keys.audio = audioList.key
+    audio.value = audioList
+  }
 
   if (!audio.value && !image.value) {
     notification.warning({
@@ -110,8 +123,6 @@ const getFileSystemHandle = async (handle: FileSystemDirectoryHandle) => {
     })
   }
 }
-
-const generateUUID = () => Math.random().toString(36) + '-' + Date.now().toString(36)
 
 const processHandle = async (handle: FileSystemDirectoryHandle | FileSystemFileHandle) => {
   if (handle.kind === 'file') {
@@ -124,17 +135,19 @@ const processHandle = async (handle: FileSystemDirectoryHandle | FileSystemFileH
   dirHandle.key = generateUUID()
   dirHandle.children = []
   dirHandle.getChildrenDir = (name: string) =>
-    dirHandle.children.find(
+    dirHandle.children?.find(
       (item) => item.name === name && item.kind === 'directory'
     ) as DirectoryHandle
   dirHandle.getChildrenFile = (name: string) =>
-    dirHandle.children.find(
-      (item) => item.name === name && item.kind === 'file'
-    ) as FileSystemFileHandle
+    dirHandle.children?.find((item) => item.name === name && item.kind === 'file') as FileHandle
 
   const iter = handle.entries()
   for await (const item of iter) {
     dirHandle.children.push(await processHandle(item[1]))
+  }
+  if (!dirHandle.children.length) {
+    dirHandle.children = null
+    dirHandle.disabled = true
   }
   return dirHandle
 }
@@ -146,6 +159,7 @@ const processHandle = async (handle: FileSystemDirectoryHandle | FileSystemFileH
     border-color #18a058 !important
 
 .home
+  flex 1
   position relative
   width 100vw
   height 100vh
